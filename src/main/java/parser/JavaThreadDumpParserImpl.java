@@ -43,7 +43,7 @@ public class JavaThreadDumpParserImpl implements JavaThreadDumpParser {
             String rawData = "";
             String humanReadableDate = "";
 
-            String line = bufferedReader.readLine();
+            String line = null;
 
             ArrayList<ThreadInfo> threadList = new ArrayList<>();
             ArrayList<LockInfo> lockedList = new ArrayList<>();
@@ -56,6 +56,7 @@ public class JavaThreadDumpParserImpl implements JavaThreadDumpParser {
                     if (isFirstLine) {
                         try {
                             dateTime = line;
+                            dateTime = dateTime.replace(":","-");
                             timeStamp = Long.toString(new SimpleDateFormat("yyyy-mm-dd hh:mm:ss").parse(line).getTime());
                             isFirstLine = false;
                         } catch (ParseException e) {
@@ -134,6 +135,8 @@ public class JavaThreadDumpParserImpl implements JavaThreadDumpParser {
             }
 
         } catch (IOException e) {
+            System.err.println("User dir :" + System.getProperty("user.dir"));
+
             e.printStackTrace();
         }
 
