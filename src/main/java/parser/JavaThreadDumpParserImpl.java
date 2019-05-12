@@ -41,88 +41,95 @@ public class JavaThreadDumpParserImpl implements JavaThreadDumpParser {
             String nid = "";
             String state = "";
             String rawData = "";
+            String humanReadableDate = "";
 
             String line = bufferedReader.readLine();
 
             ArrayList<ThreadInfo> threadList = new ArrayList<>();
             ArrayList<LockInfo> lockedList = new ArrayList<>();
 
-            try {
-                dateTime = line;
-                timeStamp = Long.toString(new SimpleDateFormat("yyyy-mm-dd hh:mm:ss").parse(line).getTime());
-            } catch (ParseException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
 
+            boolean isFirstLine = true;
             while ((line = bufferedReader.readLine()) != null) {
-                if (line.startsWith("\"")) {
-                    // Start processing new thread info
-                    if (threadInfo != null) {
-                        threadInfo.setRawData(rawData);
-                        threadList.add(threadInfo);
-                        rawData = "";
-                    }
 
-                    Matcher matcher = namePattern.matcher(line);
-                    if (matcher.find()) {
-                        tid = matcher.group(2);
-                        nid = matcher.group(3);
-                        threadInfo = new ThreadInfo(matcher.group(1), tid, nid, null, null);
-                    }
-                } else if (line.contains("Thread.State")) {
-                    Matcher matcher = statePattern.matcher(line);
-                    if (matcher.find()) {
-                        threadInfo.setState(matcher.group(1).split(" ")[0]);
-                    }
-                }else if (line.contains("parking to wait for")){
-                    Matcher matcher = lockWaitPattern.matcher(line);
-                    if (matcher.find()){
-                        LockInfo lockInfo = new LockInfo();
-                        lockInfo.setId(matcher.group(1));
-                        lockInfo.setNid(nid);
-                        lockInfo.setTid(tid);
-                        lockInfo.setState(state);
-                        lockedList.add(lockInfo);
-                    }
-                }else if (line.contains("- locked")){
-                    Matcher matcher = lockedPattern.matcher(line);
-                    if (matcher.find()){
-                        LockInfo lockInfo = new LockInfo();
-                        lockInfo.setId(matcher.group(1));
-                        lockInfo.setNid(nid);
-                        lockInfo.setTid(tid);
-                        lockInfo.setState(state);
-                        lockInfo.setOwned(1);
-                        lockedList.add(lockInfo);
+                if (line.trim().length() > 0) {
+                    if (isFirstLine) {
+                        try {
+                            dateTime = line;
+                            timeStamp = Long.toString(new SimpleDateFormat("yyyy-mm-dd hh:mm:ss").parse(line).getTime());
+                            isFirstLine = false;
+                        } catch (ParseException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    } else if (line.startsWith("\"")) {
+                        // Start processing new thread info
+                        if (threadInfo != null) {
+                            threadInfo.setRawData(rawData);
+                            threadList.add(threadInfo);
+                            rawData = "";
+                        }
+
+                        Matcher matcher = namePattern.matcher(line);
+                        if (matcher.find()) {
+                            tid = matcher.group(2);
+                            nid = matcher.group(3);
+                            threadInfo = new ThreadInfo(matcher.group(1), tid, nid, null, null);
+                        }
+                    } else if (line.contains("Thread.State")) {
+                        Matcher matcher = statePattern.matcher(line);
+                        if (matcher.find()) {
+                            threadInfo.setState(matcher.group(1).split(" ")[0]);
+                        }
+                    } else if (line.contains("parking to wait for")) {
+                        Matcher matcher = lockWaitPattern.matcher(line);
+                        if (matcher.find()) {
+                            LockInfo lockInfo = new LockInfo();
+                            lockInfo.setId(matcher.group(1));
+                            lockInfo.setNid(nid);
+                            lockInfo.setTid(tid);
+                            lockInfo.setState(state);
+                            lockedList.add(lockInfo);
+                        }
+                    } else if (line.contains("- locked")) {
+                        Matcher matcher = lockedPattern.matcher(line);
+                        if (matcher.find()) {
+                            LockInfo lockInfo = new LockInfo();
+                            lockInfo.setId(matcher.group(1));
+                            lockInfo.setNid(nid);
+                            lockInfo.setTid(tid);
+                            lockInfo.setState(state);
+                            lockInfo.setOwned(1);
+                            lockedList.add(lockInfo);
+                        }
+                    } else {
+                        rawData += line + "\n";
                     }
                 }
-
-                rawData += line + "\n";
             }
 
             // After file reading write information in CSV file
-            if (!threadList.isEmpty()){
+            if (!threadList.isEmpty()) {
 
-                try (CSVWriter threadListWriter = new CSVWriter(new PrintWriter("ThreadList.csv"))){
-                    threadListWriter.writeNext(new String[]{"name","tid","nid","state","rawData"});
-                    threadList.forEach(t->{
-                        threadListWriter.writeNext(new String[]{t.getName(),t.getTid(),t.getNid(),t.getState(),t.getRawData()});
+                try (CSVWriter threadListWriter = new CSVWriter(new PrintWriter("ThreadList" + dateTime + ".csv"))) {
+                    threadListWriter.writeNext(new String[]{"name", "tid", "nid", "state", "rawData"});
+                    threadList.forEach(t -> {
+                        threadListWriter.writeNext(new String[]{t.getName(), t.getTid(), t.getNid(), t.getState(), t.getRawData()});
                     });
                     threadListWriter.flush();
-                    System.out.println("Wrote file "+ System.getProperty("user.dir")+File.separator+"ThreadList.csv");
+                    System.out.println("Wrote file " + System.getProperty("user.dir") + File.separator + "ThreadList" + dateTime + ".csv");
                 }
             }
 
             // LockInfo
-            if (!lockedList.isEmpty()){
-                try (CSVWriter threadListWriter = new CSVWriter(new PrintWriter("LockedThreadList.csv"))){
-                    threadListWriter.writeNext(new String[]{"id","tid","nid","state","owned"});
-                    lockedList.forEach(l->{
-                        threadListWriter.writeNext(new String[]{l.getId(),l.getTid(),l.getNid(),l.getState(),String.valueOf(l.getOwned())});
+            if (!lockedList.isEmpty()) {
+                try (CSVWriter threadListWriter = new CSVWriter(new PrintWriter("LockedThreadList" + dateTime + ".csv"))) {
+                    threadListWriter.writeNext(new String[]{"id", "tid", "nid", "state", "owned"});
+                    lockedList.forEach(l -> {
+                        threadListWriter.writeNext(new String[]{l.getId(), l.getTid(), l.getNid(), l.getState(), String.valueOf(l.getOwned())});
                     });
                     threadListWriter.flush();
-                    System.out.println("Wrote file "+ System.getProperty("user.dir")+File.separator+"LockedThreadList.csv");
+                    System.out.println("Wrote file " + System.getProperty("user.dir") + File.separator + "LockedThreadList" + dateTime + ".csv");
                 }
             }
 
