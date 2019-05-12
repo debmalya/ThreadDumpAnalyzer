@@ -95,10 +95,9 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>org.deb.PredictClosingPrice</mainClass>
+                    <mainClass>parser.JavaThreadDumpParserImpl</mainClass>
                     <arguments>
-                        <argument>./src/main/resources/stocks_closing_prices.csv</argument>
-                        <argument>./src/main/resources/predicted_prices.csv</argument>
+                        <argument>src/test/resource/TestThreadDump.txt</argument>
                     </arguments>
                 </configuration>
             </plugin>
